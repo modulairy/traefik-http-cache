@@ -4,7 +4,7 @@
 check: lint test
 
 fmt:
-	gofmt -w *.go internal/testbackend/*.go
+	gofmt -w *.go internal/store/*.go internal/testbackend/*.go
 
 lint:
 	test -z "$$(gofmt -l .)"

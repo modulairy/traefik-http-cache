@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/modulairy/traefik-http-cache/internal/store"
 )
 
 const Version = "0.1.0"
@@ -27,7 +29,7 @@ type entry struct {
 }
 type middleware struct {
 	next           http.Handler
-	store          Store
+	store          store.Store
 	rules          []compiledRule
 	prefix, policy string
 	retention      time.Duration
@@ -46,20 +48,21 @@ func New(_ context.Context, next http.Handler, c *Config, name string) (http.Han
 	if err != nil {
 		return nil, err
 	}
-	var store Store
+	var storage store.Store
 	switch c.Store.Type {
 	case "memory":
-		memory, memoryErr := newMemory(c.Store.Memory)
+		memory, memoryErr := store.NewMemory(store.MemoryConfig{MaxEntries: c.Store.Memory.MaxEntries, MaxBytes: c.Store.Memory.MaxBytes})
 		if memoryErr != nil {
 			return nil, memoryErr
 		}
-		store = memory
+		storage = memory
 	case "redis":
-		redis, redisErr := newRedis(c.Store.Redis, "thc:"+digest(c.KeyPrefix))
+		cfg := c.Store.Redis
+		redis, redisErr := store.NewRedis(store.RedisConfig{Address: cfg.Address, Username: cfg.Username, PasswordFile: cfg.PasswordFile, DB: cfg.DB, Timeout: cfg.Timeout, TLS: cfg.TLS, ServerName: cfg.ServerName}, "thc:"+digest(c.KeyPrefix))
 		if redisErr != nil {
 			return nil, redisErr
 		}
-		store = redis
+		storage = redis
 	default:
 		return nil, fmt.Errorf("unknown store type %q", c.Store.Type)
 	}
@@ -67,7 +70,7 @@ func New(_ context.Context, next http.Handler, c *Config, name string) (http.Han
 		return nil, err
 	}
 	b, _ := json.Marshal(c.Rules)
-	m := &middleware{next: next, store: store, rules: rules, prefix: c.KeyPrefix, policy: digest(string(b))}
+	m := &middleware{next: next, store: storage, rules: rules, prefix: c.KeyPrefix, policy: digest(string(b))}
 	for _, r := range rules {
 		if r.retention > m.retention {
 			m.retention = r.retention

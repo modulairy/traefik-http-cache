@@ -12,7 +12,7 @@ Enable GitHub Actions and allow the pinned actions in organization policy. Allow
 
 ## Release checklist
 
-1. Update the source version and changelog and review the changes. Preserve the root plugin package and `.traefik.yml` layout from the [official Traefik example](https://github.com/traefik/plugindemo).
+1. Update the source version and changelog and review the changes. Preserve the root plugin entry point and `.traefik.yml` layout from the [official Traefik example](https://github.com/traefik/plugindemo), and include the `internal/store` supporting package in the container build.
 2. Run native checks and the Compose suite successfully.
 3. Push the reviewed source commit, then its version tag.
 4. Confirm the validation and publish jobs succeed, inspect the release and GHCR package, and pull the exact tag/digest.

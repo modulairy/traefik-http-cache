@@ -1,32 +1,14 @@
 // Copyright 2026 Modulairy contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-package traefik_http_cache
+package store
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
 )
-
-// Store uses a per-URI generation to reject writes racing with invalidation.
-// Read returns a generation even on a miss. Data is owned by the caller.
-type Store interface {
-	Read(context.Context, string, string, time.Duration) ([]byte, string, error)
-	Write(context.Context, string, string, string, []byte, time.Duration) error
-	Invalidate(context.Context, string, time.Duration) error
-}
-
-func token() (string, error) {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(b), nil
-}
 
 type memoryValue struct {
 	data    []byte
@@ -46,7 +28,7 @@ type memoryStore struct {
 	entries    int
 }
 
-func newMemory(c MemoryConfig) (*memoryStore, error) {
+func NewMemory(c MemoryConfig) (*memoryStore, error) {
 	if c.MaxEntries <= 0 || c.MaxBytes <= 0 {
 		return nil, fmt.Errorf("memory limits must be positive")
 	}

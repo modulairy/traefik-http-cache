@@ -1,7 +1,7 @@
 // Copyright 2026 Modulairy contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-package traefik_http_cache
+package store
 
 import (
 	"bufio"
@@ -25,7 +25,7 @@ type redisStore struct {
 	prefix   string
 }
 
-func newRedis(c RedisConfig, prefix string) (*redisStore, error) {
+func NewRedis(c RedisConfig, prefix string) (*redisStore, error) {
 	if c.Address == "" || c.DB < 0 {
 		return nil, fmt.Errorf("redis address and nonnegative db required")
 	}

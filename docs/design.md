@@ -4,7 +4,11 @@ The middleware owns HTTP policy; stores own persistence. There are no external G
 
 ## Source layout
 
-The repository uses the [official Traefik plugin example](https://github.com/traefik/plugindemo) as its layout reference: a root Go package with `Config`, `CreateConfig` and `New`, root `go.mod` and `.traefik.yml`, adjacent tests, and a `Makefile`. `http_cache.go` contains the HTTP orchestration, with configuration, store and adapter concerns split into files in the same package. `internal/testbackend` is an integration fixture, not the plugin entry point. `container/` and `infra/` package and exercise the plugin; `docs/` explains its behavior.
+The repository keeps the root Traefik entry point from the [official plugin example](https://github.com/traefik/plugindemo): `Config`, `CreateConfig` and `New`, with root `go.mod`, `.traefik.yml`, HTTP tests and `Makefile`. `http_cache.go` handles HTTP orchestration, `config.go` validates the public configuration and rules, and `response.go` captures and forwards responses.
+
+Storage follows the [Go recommendation for supporting packages](https://go.dev/doc/modules/layout#package-or-command-with-supporting-packages): `internal/store` contains `store.go` (the generation-aware contract), `memory.go`, `redis.go`, adapter-specific `config.go`, and colocated store tests. The HTTP package maps public configuration to the internal adapters; the store package handles opaque values and does not depend on HTTP policy. Its API can evolve without becoming an externally supported package.
+
+`internal/testbackend` remains an integration fixture, not the plugin entry point. `container/` and `infra/` package and exercise the plugin; `docs/` explains its behavior. The container must include both root plugin source and `internal/store` so Yaegi can load the supporting package. Real Traefik integration tests remain the compatibility check for this layout.
 
 This is a layout/API convention, not a claim of Traefik certification or plugin catalog approval. The original project is Apache-2.0; upstream components retain their own licenses as described in `THIRD_PARTY_NOTICES.md`.
 

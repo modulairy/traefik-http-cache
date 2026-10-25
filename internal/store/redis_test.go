@@ -1,7 +1,7 @@
 // Copyright 2026 Modulairy contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-package traefik_http_cache
+package store
 
 import (
 	"bufio"
@@ -61,7 +61,7 @@ func TestRedisAuthenticationAndDatabase(t *testing.T) {
 		}
 		commands <- result
 	}()
-	s, err := newRedis(RedisConfig{Address: listener.Addr().String(), Username: "cache-user", PasswordFile: passwordPath, DB: 2, Timeout: "1s"}, "test")
+	s, err := NewRedis(RedisConfig{Address: listener.Addr().String(), Username: "cache-user", PasswordFile: passwordPath, DB: 2, Timeout: "1s"}, "test")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,7 +9,8 @@ LABEL org.opencontainers.image.source="https://github.com/modulairy/traefik-http
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${REVISION}"
 WORKDIR /
-COPY go.mod .traefik.yml http_cache.go config.go redis.go response.go store.go LICENSE NOTICE /plugins-local/src/github.com/modulairy/traefik-http-cache/
+COPY go.mod .traefik.yml http_cache.go config.go response.go LICENSE NOTICE /plugins-local/src/github.com/modulairy/traefik-http-cache/
+COPY internal/store/*.go /plugins-local/src/github.com/modulairy/traefik-http-cache/internal/store/
 COPY LICENSE NOTICE THIRD_PARTY_NOTICES.md /usr/share/licenses/traefik-http-cache/
 COPY licenses/ /usr/share/licenses/traefik-http-cache/third-party/
 # Enable the bundled plugin in static configuration (see infra/traefik.yml).
