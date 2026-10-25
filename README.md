@@ -35,6 +35,8 @@ docker compose -f infra/compose.yml down --remove-orphans
 
 Unit tests skip live tests unless `REDIS_ADDR` / `CACHE_TEST_URL` are set. The Compose test service sets both and exercises Redis plus the actual Traefik/Yaegi runtime. Start the stack and wait for HTTP readiness first.
 
+With GNU Make and a POSIX shell, `make check` runs formatting verification, vet and race tests; `make up`, `make integration` and `make down` wrap the Compose commands. Wait for router readiness before `make integration`. `make fmt` formats the Go source.
+
 ## Configure
 
 See [configuration](docs/configuration.md), [architecture and limitations](docs/design.md), [Kubernetes examples](infra/kubernetes/README.md), and [release process](docs/releases.md). A complete runnable example is in [infra/dynamic.yml](infra/dynamic.yml).
@@ -73,4 +75,8 @@ Use a unique `keyPrefix` per application/security boundary. Rules are evaluated 
 
 Version tags trigger validation, then publish `ghcr.io/modulairy/traefik-http-cache:<tag>` and a GitHub Release. For the initial release the tag is `v0.1.0`. Publication status is determined by the Actions run; source availability alone does not imply an image has been published. The image targets Linux AMD64.
 
-No license has been selected yet. This repository does not currently grant an open-source license.
+## Project layout and license
+
+The plugin follows the root-package layout of the [official Traefik plugin example](https://github.com/traefik/plugindemo): `go.mod`, `.traefik.yml`, plugin source, tests and `Makefile` live at the repository root. Additional adapters remain in the same Go package for Yaegi loading; deployment examples and design documentation live under `infra/`, `container/` and `docs/`.
+
+Original project code is licensed under [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) and [third-party notices](THIRD_PARTY_NOTICES.md). Bundled Traefik, the Go runtime and base-image components retain their own licenses.

@@ -1,3 +1,6 @@
+// Copyright 2026 Modulairy contributors.
+// SPDX-License-Identifier: Apache-2.0
+
 package traefik_http_cache
 
 import (

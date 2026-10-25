@@ -2,6 +2,12 @@
 
 The middleware owns HTTP policy; stores own persistence. There are no external Go dependencies. The Redis adapter implements only the required RESP2 subset to keep interpreted plugin dependencies small.
 
+## Source layout
+
+The repository uses the [official Traefik plugin example](https://github.com/traefik/plugindemo) as its layout reference: a root Go package with `Config`, `CreateConfig` and `New`, root `go.mod` and `.traefik.yml`, adjacent tests, and a `Makefile`. `http_cache.go` contains the HTTP orchestration, with configuration, store and adapter concerns split into files in the same package. `internal/testbackend` is an integration fixture, not the plugin entry point. `container/` and `infra/` package and exercise the plugin; `docs/` explains its behavior.
+
+This is a layout/API convention, not a claim of Traefik certification or plugin catalog approval. The original project is Apache-2.0; upstream components retain their own licenses as described in `THIRD_PARTY_NOTICES.md`.
+
 1. Successful unsafe requests invalidate their exact scheme/host/path/query scope.
 2. Other requests are checked for bypass conditions and matched to the first request rule.
 3. The store returns the representation and its URI generation.

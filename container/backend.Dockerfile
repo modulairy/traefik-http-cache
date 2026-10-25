@@ -5,5 +5,7 @@ COPY internal/testbackend ./internal/testbackend
 RUN CGO_ENABLED=0 go build -trimpath -o /backend ./internal/testbackend
 FROM scratch
 COPY --from=build /backend /backend
+COPY LICENSE NOTICE /usr/share/licenses/traefik-http-cache/
+COPY licenses/go-LICENSE /usr/share/licenses/go/LICENSE
 USER 65532:65532
 ENTRYPOINT ["/backend"]

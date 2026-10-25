@@ -1,3 +1,6 @@
+// Copyright 2026 Modulairy contributors.
+// SPDX-License-Identifier: Apache-2.0
+
 // Package traefik_http_cache implements a conservative shared HTTP cache for Traefik.
 package traefik_http_cache
 

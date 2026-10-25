@@ -1,5 +1,7 @@
 # Changelog
 
+Original project code is licensed under Apache-2.0. Upstream notices are retained in `licenses/` and included in container images.
+
 ## v0.1.0
 
 Initial implementation:
