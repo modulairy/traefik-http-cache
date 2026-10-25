@@ -2,14 +2,19 @@
 
 These manifests assume an existing `apps` namespace, `catalog` Service on port 8080, and a configured Traefik controller. Names and hosts are examples. Choose one route example, rather than installing all three for the same host.
 
-Use `ghcr.io/modulairy/traefik-http-cache:v0.1.0` after its release workflow succeeds. The image includes the local plugin source. Add this fragment to the controller's existing static configuration and restart it:
+**Availability gate — 2026-10-25:** a fresh Traefik v3.7.16 remote startup returned `404 Unknown plugin` for `v0.1.0`, disabling plugins and invalidating dependent routers. Do not roll this remote configuration into a live controller until a fresh startup succeeds. The bundled local alternative below remains available. Add this fragment to its static configuration and restart/roll out the controller; no custom image or plugin-copying init container is needed:
 
 ```yaml
 experimental:
-  localPlugins:
+  plugins:
     httpCache:
       moduleName: github.com/modulairy/traefik-http-cache
+      version: v0.1.0
 ```
+
+Traefik downloads and loads the plugin at startup, inside the controller process. Permit access to its plugin distribution endpoints and check startup logs for successful loading. Version changes require a restart. Remote availability/catalog discovery must be verified independently; the local Compose suite does not validate them. See the [official installation guide](https://plugins.traefik.io/install) and [release checklist](../../docs/releases.md#plugin-catalog).
+
+For offline plugin loading, the optional `ghcr.io/modulairy/traefik-http-cache:v0.1.0` image bundles the local source after its publishing workflow succeeds. In that mode replace `plugins` with `localPlugins` and omit `version`, as in `../traefik.yml`. Choose one registration mode for the `httpCache` alias. Dynamic Middleware manifests are the same in either mode.
 
 Enable the Kubernetes CRD provider and install matching Traefik CRDs/RBAC. Also enable the Kubernetes Ingress provider for Ingress, or the Kubernetes Gateway provider and Gateway API CRDs/RBAC for HTTPRoute. The Gateway API example assumes an existing `traefik-gateway` Gateway in `apps` with a listener allowing the route. Middleware is attached to HTTPRoute, not directly to Gateway.
 

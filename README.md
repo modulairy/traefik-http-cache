@@ -2,7 +2,23 @@
 
 Rule-based HTTP response caching for Traefik, with interchangeable memory and Redis stores. The first release is **v0.1.0**.
 
-The container bundles Traefik and this local Go plugin. It is not a standalone cache server. Static configuration must enable `experimental.localPlugins.httpCache`; dynamic middleware configuration selects rules and storage.
+The recommended installation uses Traefik's remote plugin loader with a pinned module version. The plugin runs inside Traefik through Yaegi; it is not a separate cache service. Dynamic middleware configuration selects rules and storage.
+
+## Install in an existing Traefik
+
+Once remote distribution passes the availability check below, add this to the existing static configuration, then restart Traefik:
+
+```yaml
+experimental:
+  plugins:
+    httpCache:
+      moduleName: github.com/modulairy/traefik-http-cache
+      version: v0.1.0
+```
+
+Remote mode downloads plugin source at startup and requires access to Traefik's plugin distribution endpoints. A compatible existing Traefik image can be retained; no custom image or init container is required. Configure the middleware below and attach it to the desired router. See the [official installation guide](https://plugins.traefik.io/install).
+
+**Remote availability check — 2026-10-25:** a fresh Traefik v3.7.16 startup returned `404 Unknown plugin` for this module at `v0.1.0`, disabled plugins and invalidated dependent routers. Remote installation is recommended once catalog distribution is available; it is not ready as of this check. Use local mode below meanwhile. The repository is public, is not a fork and has the required topic; await discovery and inspect ingestion issues. See the [catalog checklist](docs/releases.md#plugin-catalog).
 
 ## Features
 
@@ -15,7 +31,7 @@ The container bundles Traefik and this local Go plugin. It is not a standalone c
 
 ## Try locally
 
-Docker Engine and Docker Compose are required. From the repository root:
+For development or offline plugin loading, the supplied container bundles Traefik and the local plugin source; `infra/traefik.yml` enables `experimental.localPlugins.httpCache`. Use either remote or local registration for this alias. Docker Engine and Docker Compose are required. From the repository root:
 
 ```sh
 docker compose -f infra/compose.yml up -d --build

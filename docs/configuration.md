@@ -1,6 +1,18 @@
 # Configuration
 
-The plugin alias is `httpCache`, module `github.com/modulairy/traefik-http-cache`. Use the bundled image with static configuration as shown in `infra/traefik.yml`. A plugin catalog listing is not required for local plugins and is not provided by publishing this repository.
+The plugin alias is `httpCache`, module `github.com/modulairy/traefik-http-cache`. **As of 2026-10-25, a fresh Traefik v3.7.16 remote startup returned `404 Unknown plugin` at `v0.1.0`; plugins were disabled and dependent routers were invalidated. Use local mode until distribution is available.** The following is the recommended registration once remote availability is confirmed:
+
+```yaml
+experimental:
+  plugins:
+    httpCache:
+      moduleName: github.com/modulairy/traefik-http-cache
+      version: v0.1.0
+```
+
+This belongs to Traefik's static configuration. Restart Traefik after adding it or changing the pinned version; dynamic middleware rules use the same `httpCache` alias. Source is downloaded during startup and interpreted inside the Traefik process, so the existing compatible Traefik image does not need replacement. Remote startup needs network access to plugin distribution services and a writable `./plugins-storage` directory relative to the Traefik working directory. With a read-only container filesystem, mount a dedicated writable volume there and verify runtime UID permissions. Verify successful loading in logs before routing traffic through the middleware. [Official installation guide](https://plugins.traefik.io/install).
+
+For local development or offline plugin loading, use the bundled image and `experimental.localPlugins` configuration in `infra/traefik.yml` instead. Local mode reads source under `/plugins-local/src/github.com/modulairy/traefik-http-cache`, including `internal/store`; it does not download the plugin. Do not register the same alias in both modes. The repository's Compose environment validates local mode; it does not prove catalog listing or remote download availability.
 
 ## Rules
 

@@ -10,6 +10,19 @@ The publishing job uses the repository's short-lived GITHUB_TOKEN with `packages
 
 Enable GitHub Actions and allow the pinned actions in organization policy. Allow this repository to publish the matching GHCR package; existing packages may require explicitly granting repository Actions access. Package visibility is separate from repository visibility. Change package visibility to public if unauthenticated image pulls are intended. Private pulls require authorized credentials/imagePullSecrets. These are account settings, not effects of committing the workflow.
 
+## Plugin catalog
+
+**Availability check — 2026-10-25:** the repository was verified public, non-fork and tagged with `traefik-plugin`, but a fresh official Traefik v3.7.16 remote startup returned `404 Unknown plugin` for `github.com/modulairy/traefik-http-cache@v0.1.0`. Traefik disabled plugins and invalidated dependent routers. Catalog distribution is pending; await the daily scan, inspect importer issues and repeat a fresh remote startup before using remote mode. GHCR publishes an optional bundled local-mode image; that workflow does not register a catalog entry or prove remote loading.
+
+Before expecting catalog discovery, verify:
+
+- The GitHub repository is public, is not a fork, and has the `traefik-plugin` topic.
+- Root `.traefik.yml` contains a valid manifest and usable `testData`.
+- Root `go.mod` identifies the module, and the intended source version has a Git tag.
+- External package dependencies, if introduced, are vendored and committed. The current plugin has none; `internal/store` is part of this module.
+
+The catalog discovers eligible repositories daily. If its importer opens an error issue, fix the reported problem and close the issue so discovery can retry. A pushed tag is not confirmation of listing: verify the catalog entry and test a fresh Traefik remote startup separately. These requirements and timing follow the [official packaging checklist](https://plugins.traefik.io/create).
+
 ## Release checklist
 
 1. Update the source version and changelog and review the changes. Preserve the root plugin entry point and `.traefik.yml` layout from the [official Traefik example](https://github.com/traefik/plugindemo), and include the `internal/store` supporting package in the container build.
