@@ -181,7 +181,7 @@ jobs:
             test "$ready" = true
           done
       - name: Published image Redis and Traefik integration with race tests
-        run: docker compose --profile test run --rm --no-build test
+        run: docker compose --profile test run --rm --no-deps test
       - name: Integration logs
         if: failure()
         run: docker compose logs --no-color

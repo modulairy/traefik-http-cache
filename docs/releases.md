@@ -49,4 +49,4 @@ Release distributions must retain the project's Apache 2.0 `LICENSE` and `NOTICE
 
 Adds linux/arm64 alongside linux/amd64 without changing cache behavior or the pinned Traefik 3.7.16 base. Image tag: `v0.1.1-traefik-v3.7`. Each release uses an OCI index containing both runtime architectures plus SBOM/provenance attestations. Older v0.1.0 tags and digests remain unchanged. Native runners validate both architectures; published-image tests use the exact digest, not a rebuilt image.
 
-Publication is complete only when the v0.1.1 release workflow and both published-image verification jobs pass; until then, the new release is pending.
+The initial v0.1.1 run published both images but its final test command used an unsupported Compose option. The dedicated `verify-v0.1.1.yml` recovery workflow verifies the same immutable published digest on both native architectures and creates the release only after success. It does not rebuild or move the source/image tags. Future releases use the corrected main workflow.
