@@ -89,7 +89,7 @@ Use a unique `keyPrefix` per application/security boundary. Rules are evaluated 
 
 ## Releases
 
-Version tags trigger validation, then publish `ghcr.io/modulairy/traefik-http-cache:<tag>` and a GitHub Release. For the initial release the tag is `v0.1.0`. Publication status is determined by the Actions run; source availability alone does not imply an image has been published. The image targets Linux AMD64.
+Source version tags trigger validation, then publish an image named `ghcr.io/modulairy/traefik-http-cache:<plugin-tag>-traefik-v<major.minor>` and a GitHub Release. For example, plugin `v0.1.0` with Traefik `v3.7.16` uses image tag `v0.1.0-traefik-v3.7`. Source Git tags and remote plugin versions remain `v0.1.0`; the Traefik suffix applies only to container tags. Future builds record the full Traefik version in image label `io.traefik.version` and release notes. The initial alias preserves the original image metadata; its exact version is verified from the runtime and recorded in release notes. The existing legacy image tag `v0.1.0` remains unchanged. Publication status is determined by the Actions run; source availability alone does not imply an image has been published. The image targets Linux AMD64.
 
 ## Project layout and license
 

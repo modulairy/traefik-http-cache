@@ -2,9 +2,13 @@
 
 The initial version is `v0.1.0`. `.github/workflows/ci-release.yml` validates main pushes, pull requests and manual runs. Only version-tag push events publish packages and releases; manual workflow dispatch does not publish.
 
+The separate `.github/workflows/image-tag-alias.yml` migration is an exception: its scoped push trigger or manual retry adds the suffixed alias to the existing immutable image index digest and updates the existing release notes. It does not rebuild the image, change the source Git tag, or overwrite the legacy image. Reusing the index preserves its attestations.
+
 The validation job runs formatting checks, race tests, vet, and Compose integration against real Traefik and Redis. Publishing depends on that job. The tag must be `vMAJOR.MINOR.PATCH` and match the `Version` constant in `http_cache.go`.
 
-The publishing job uses the repository's short-lived GITHUB_TOKEN with `packages: write` and `contents: write`; no personal token is required. It publishes the Linux AMD64 bundled Traefik image to `ghcr.io/modulairy/traefik-http-cache:<tag>`, with provenance and SBOM, then creates a GitHub Release identifying the image digest. There is no moving `latest` tag.
+The publishing job uses the repository's short-lived GITHUB_TOKEN with `packages: write` and `contents: write`; no personal token is required. It publishes the Linux AMD64 bundled Traefik image to `ghcr.io/modulairy/traefik-http-cache:<plugin-tag>-traefik-v<major.minor>`, with provenance and SBOM, then creates a GitHub Release identifying the image tag, exact Traefik version and digest. There is no moving `latest` tag.
+
+The workflow derives the exact Traefik version from the digest-pinned `ARG TRAEFIK_VERSION` in `container/Dockerfile`. For plugin `v0.1.0` and base `v3.7.16`, the image tag is `v0.1.0-traefik-v3.7` ; future builds also set OCI label `io.traefik.version` to the full base version. The initial alias does not add a label to the immutable original image; its exact version is verified at runtime and recorded in release notes. Only the container tag gains the suffix: source Git tags and remote plugin registration retain `v0.1.0` for Go module/catalog resolution. Future publishing uses the suffixed format only. The already published legacy `v0.1.0` image is preserved unchanged; adding an alias to its existing digest is a separate migration, not a rebuild or a source-tag change.
 
 ## Repository setup
 

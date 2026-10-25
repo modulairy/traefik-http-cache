@@ -67,6 +67,17 @@ jobs:
         run: |
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           grep -Fq "const Version = \"${TAG#v}\"" http_cache.go
+      - name: Derive image version from pinned Traefik base
+        id: versions
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          base=$(sed -n 's/^ARG TRAEFIK_VERSION=//p' container/Dockerfile)
+          [[ "$base" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)@sha256:[a-f0-9]{64}$ ]]
+          traefik_version="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+          image_tag="${TAG}-traefik-v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+          echo "traefik_version=$traefik_version" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$image_tag" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
@@ -81,7 +92,9 @@ jobs:
           file: container/Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/modulairy/traefik-http-cache:${{ github.ref_name }}
+          tags: ghcr.io/modulairy/traefik-http-cache:${{ steps.versions.outputs.image_tag }}
+          labels: |
+            io.traefik.version=${{ steps.versions.outputs.traefik_version }}
           build-args: |
             VERSION=${{ github.ref_name }}
             REVISION=${{ github.sha }}
@@ -91,9 +104,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
+          IMAGE_TAG: ${{ steps.versions.outputs.image_tag }}
+          TRAEFIK_VERSION: ${{ steps.versions.outputs.traefik_version }}
           DIGEST: ${{ steps.image.outputs.digest }}
         run: |
-          printf 'Container: `ghcr.io/modulairy/traefik-http-cache:%s`\n\nDigest: `%s`\n\nThis image bundles Traefik and the local HTTP cache plugin. See README and docs/design.md for configuration and limits.\n' "$TAG" "$DIGEST" > "$RUNNER_TEMP/release-notes.md"
+          printf 'Container: `ghcr.io/modulairy/traefik-http-cache:%s`\n\nBundled Traefik: `%s`\n\nDigest: `%s`\n\nThis image bundles Traefik and the local HTTP cache plugin. The source/plugin Git tag remains unchanged. See README and docs/design.md for configuration and limits.\n' "$IMAGE_TAG" "$TRAEFIK_VERSION" "$DIGEST" > "$RUNNER_TEMP/release-notes.md"
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi

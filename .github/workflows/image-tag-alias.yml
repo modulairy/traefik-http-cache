@@ -1,0 +1,53 @@
+name: Add descriptive v0.1.0 image tag
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/image-tag-alias.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: image-tag-alias-v0.1.0
+  cancel-in-progress: false
+
+jobs:
+  alias:
+    runs-on: ubuntu-24.04
+    env:
+      IMAGE: ghcr.io/modulairy/traefik-http-cache
+      DIGEST: sha256:77aa1426d49703690f44d9bb16272be59acaaeacfdd23ceb3b1c648413700b9a
+      ALIAS: v0.1.0-traefik-v3.7
+    steps:
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify released runtime and add alias without rebuilding
+        run: |
+          set -euo pipefail
+          docker run --rm --entrypoint traefik "$IMAGE@$DIGEST" version | tee "$RUNNER_TEMP/traefik-version.txt"
+          grep -Eq '^Version:[[:space:]]+3\.7\.16$' "$RUNNER_TEMP/traefik-version.txt"
+          if docker buildx imagetools inspect "$IMAGE:$ALIAS" > "$RUNNER_TEMP/existing.txt" 2>/dev/null; then
+            grep -Eq "^Digest:[[:space:]]+$DIGEST$" "$RUNNER_TEMP/existing.txt"
+          else
+            docker buildx imagetools create --tag "$IMAGE:$ALIAS" "$IMAGE@$DIGEST"
+          fi
+          docker buildx imagetools inspect "$IMAGE:$ALIAS" | tee "$RUNNER_TEMP/alias.txt"
+          grep -Eq "^Digest:[[:space:]]+$DIGEST$" "$RUNNER_TEMP/alias.txt"
+      - name: Update existing release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: modulairy/traefik-http-cache
+        run: |
+          set -euo pipefail
+          gh release view v0.1.0 --json body --jq .body > "$RUNNER_TEMP/notes.md"
+          if ! grep -Fq "$IMAGE:$ALIAS" "$RUNNER_TEMP/notes.md"; then
+            printf '\n\nRecommended container tag: `%s:%s`\n\nBundled Traefik: `3.7.16` (tag series: `v3.7`). This alias points to the existing release digest `%s`; the original `v0.1.0` image and source tag are unchanged.\n' "$IMAGE" "$ALIAS" "$DIGEST" >> "$RUNNER_TEMP/notes.md"
+            gh release edit v0.1.0 --notes-file "$RUNNER_TEMP/notes.md"
+          fi
