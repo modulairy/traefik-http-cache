@@ -1,6 +1,6 @@
 # Traefik HTTP Cache
 
-Rule-based HTTP response caching for Traefik, with interchangeable memory and Redis stores. The first release is **v0.1.0**.
+Rule-based HTTP response caching for Traefik, with interchangeable memory and Redis stores. Release **v0.1.1** adds Linux AMD64 and ARM64 container images; cache behavior is unchanged.
 
 The recommended installation uses Traefik's remote plugin loader with a pinned module version. The plugin runs inside Traefik through Yaegi; it is not a separate cache service. Dynamic middleware configuration selects rules and storage.
 
@@ -89,7 +89,7 @@ Use a unique `keyPrefix` per application/security boundary. Rules are evaluated 
 
 ## Releases
 
-Source version tags trigger validation, then publish an image named `ghcr.io/modulairy/traefik-http-cache:<plugin-tag>-traefik-v<major.minor>` and a GitHub Release. For example, plugin `v0.1.0` with Traefik `v3.7.16` uses image tag `v0.1.0-traefik-v3.7`. Source Git tags and remote plugin versions remain `v0.1.0`; the Traefik suffix applies only to container tags. Future builds record the full Traefik version in image label `io.traefik.version` and release notes. The initial alias preserves the original image metadata; its exact version is verified from the runtime and recorded in release notes. The existing legacy image tag `v0.1.0` remains unchanged. Publication status is determined by the Actions run; source availability alone does not imply an image has been published. The image targets Linux AMD64.
+Source version tags trigger validation, then publish an image named `ghcr.io/modulairy/traefik-http-cache:<plugin-tag>-traefik-v<major.minor>` and a GitHub Release. For example, plugin `v0.1.0` with Traefik `v3.7.16` uses image tag `v0.1.0-traefik-v3.7`. Source Git tags and remote plugin versions use the unsuffixed plugin version (for example `v0.1.1`); the Traefik suffix applies only to container tags. Future builds record the full Traefik version in image label `io.traefik.version` and release notes. The initial alias preserves the original image metadata; its exact version is verified from the runtime and recorded in release notes. The existing legacy image tag `v0.1.0` remains unchanged. Publication status is determined by the Actions run; source availability alone does not imply an image has been published. From v0.1.1, images target both Linux AMD64 and ARM64 under one tag, for example `ghcr.io/modulairy/traefik-http-cache:v0.1.1-traefik-v3.7`. Both architectures run native CI and published-image integration tests before the GitHub Release is created. The v0.1.0 images remain AMD64-only.
 
 ## Project layout and license
 
