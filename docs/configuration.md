@@ -48,6 +48,6 @@ Mount the password file into the Traefik container; it is read at middleware con
 
 Only complete 200 GET responses are stored. Authorization, Cookie, Range, Upgrade, client conditional headers, Pragma and request `no-store` bypass caching. Responses with Set-Cookie, Vary, Trailer, private, no-store or must-understand are not stored. Streaming/flush, SSE, gRPC and oversized bodies are forwarded without storage.
 
-Origin `s-maxage`, `max-age`, Expires and Age can shorten configured freshness. `no-cache` requires validation before reuse. Request `no-cache`, max-age and min-fresh are respected for cache reuse. There is no stale serving or full RFC 9111 conformance claim; extensions such as stale-while-revalidate and stale-if-error are not implemented.
+Origin `s-maxage`, `max-age`, Expires and Age can shorten configured freshness. `no-cache` requires validation before reuse. Request `no-cache`, max-age and min-fresh are respected for cache reuse. Safe requests with `only-if-cached` return 504 when no usable cached response exists, without contacting the origin. There is no stale serving or full RFC 9111 conformance claim; extensions such as stale-while-revalidate and stale-if-error are not implemented.
 
 `X-Cache-Status` reports HIT, MISS, REVALIDATED, or BYPASS on handled paths. Some direct bypass/streaming paths have no status header. It is diagnostic, not a security assertion.
