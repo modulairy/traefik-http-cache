@@ -1,0 +1,68 @@
+http:
+  routers:
+    memory:
+      rule: Host(`memory.localhost`)
+      service: backend
+      middlewares: [memory-cache]
+    redis:
+      rule: Host(`redis.localhost`)
+      service: backend
+      middlewares: [redis-cache]
+  services:
+    backend:
+      loadBalancer:
+        servers:
+          - url: http://backend:8080
+  middlewares:
+    memory-cache:
+      plugin:
+        httpCache:
+          keyPrefix: demo-memory
+          store:
+            type: memory
+            memory:
+              maxEntries: 1000
+              maxBytes: 16777216
+          rules:
+            - name: revalidate
+              request:
+                path: {type: exact, value: /validate}
+              cache:
+                ttl: 60s
+                retention: 10m
+                revalidation: {mode: always}
+            - name: public-json
+              request:
+                path: {type: prefix, value: /}
+              response:
+                contentTypes: [application/json]
+                headers:
+                  - {name: X-Cache-Enabled, operator: exact, value: 'true'}
+              cache:
+                ttl: 60s
+                retention: 10m
+    redis-cache:
+      plugin:
+        httpCache:
+          keyPrefix: demo-redis
+          store:
+            type: redis
+            redis:
+              address: redis:6379
+              timeout: 200ms
+          rules:
+            - name: revalidate
+              request:
+                path: {type: exact, value: /validate}
+              cache:
+                ttl: 60s
+                retention: 10m
+                revalidation: {mode: always}
+            - name: public-json
+              request:
+                path: {type: prefix, value: /}
+              response:
+                contentTypes: [application/json]
+              cache:
+                ttl: 60s
+                retention: 10m

@@ -1,0 +1,20 @@
+displayName: HTTP Cache
+type: middleware
+import: github.com/modulairy/traefik-http-cache
+summary: Rule-based HTTP response caching with memory and Redis adapters and conditional revalidation.
+testData:
+  keyPrefix: catalog-test
+  store:
+    type: memory
+    memory:
+      maxEntries: 100
+      maxBytes: 1048576
+  rules:
+    - name: public
+      request:
+        path:
+          type: prefix
+          value: /
+      cache:
+        ttl: 60s
+        retention: 10m

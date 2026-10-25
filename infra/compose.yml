@@ -1,0 +1,31 @@
+name: traefik-http-cache-dev
+services:
+  traefik:
+    image: traefik-http-cache:dev
+    build:
+      context: ..
+      dockerfile: container/Dockerfile
+    ports:
+      - '127.0.0.1:18080:8000'
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+    depends_on: [backend, redis]
+  backend:
+    build:
+      context: ..
+      dockerfile: container/backend.Dockerfile
+  redis:
+    image: redis:8.10.2-alpine@sha256:0bf6577d7774e592b29d093e3ac9390eb91e13d72c21e506afce736de5e0eeb0
+    command: [redis-server, --save, '', --appendonly, 'no', --maxmemory, 64mb, --maxmemory-policy, allkeys-lru]
+  test:
+    image: golang:1.27.3@sha256:f20d83a83e18dbd2a4714b8ffd4b30b287b6243962dd75608e86abcc63ba4efc
+    profiles: [test]
+    working_dir: /src
+    volumes:
+      - ..:/src
+    environment:
+      REDIS_ADDR: redis:6379
+      CACHE_TEST_URL: http://traefik:8000
+    command: [go, test, -race, -count=1, ./...]
+    depends_on: [traefik]

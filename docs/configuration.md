@@ -1,0 +1,53 @@
+# Configuration
+
+The plugin alias is `httpCache`, module `github.com/modulairy/traefik-http-cache`. Use the bundled image with static configuration as shown in `infra/traefik.yml`. A plugin catalog listing is not required for local plugins and is not provided by publishing this repository.
+
+## Rules
+
+`keyPrefix` is required. `rules` must contain at least one rule with a unique nonempty `name`.
+
+| Field | Behavior/default |
+| --- | --- |
+| `request.path.type` | Required: `exact`, `prefix`, `contains`, `regex` |
+| `request.path.value` | Required path expression; regex uses Go regexp syntax |
+| `request.methods` | `[GET]`; other methods cannot be configured for caching |
+| `request.headers` / `response.headers` | List of `name`, `operator`, `value`; operators: `exists`, `exact`, `prefix`, `contains`, `regex` |
+| `response.contentTypes` | Optional alternatives; exact MIME types or `application/*+json` |
+| `cache.ttl` | `60s`; positive duration, upper bound on freshness |
+| `cache.retention` | `10m`; at least TTL, at most `24h` |
+| `cache.maxBodyBytes` | `1048576`; allowed range 1–67108864 |
+| `cache.keyHeaders` | Optional request header names that distinguish representations |
+| `cache.revalidation.mode` | `on-expiry` or `always`; default `on-expiry` |
+
+Conditions within a rule are ANDed; Content-Type alternatives are ORed. Matching is case-sensitive except header names and MIME comparison. MIME parameters on the response are ignored. Regex is compiled once at middleware construction; use anchors for full-path matching. The decoded URL path is matched, while the original escaped path and raw query participate in the cache identity. Query parameters are not reordered or dropped.
+
+Header values are joined with `, ` before matching. `exists` checks field presence, including an empty value. A request header condition does not automatically add that header to the cache key. Add every origin representation selector to `keyHeaders`, or do not cache that endpoint. `Vary` responses are conservatively excluded even when key headers are configured.
+
+## Stores
+
+Memory is the default store. Defaults are 10000 entries and 64 MiB serialized value bytes. These limits do not represent total Go heap usage: keys, maps and object overhead also consume memory. Each middleware construction gets an independent store, including inside the same Traefik process. Restarts and reloads discard it. Cleanup is lazy during cache operations; there is no background worker or strict LRU policy. Capacity can cause writes to be skipped or URI scopes to be evicted.
+
+Redis configuration:
+
+```yaml
+store:
+  type: redis
+  redis:
+    address: redis.cache.svc.cluster.local:6379
+    db: 0
+    timeout: 200ms
+    tls: true
+    serverName: redis.cache.svc.cluster.local
+    username: cache
+    passwordFile: /run/secrets/redis-password
+```
+
+Mount the password file into the Traefik container; it is read at middleware construction, so rotation requires reloading the middleware. Never put credentials in the configuration or repository. TLS verifies the server using system trust; custom CA/client certificate options are not exposed. `timeout` must be positive and no more than 10 seconds. Only standalone Redis is supported; Sentinel, Cluster, pooling, retries and automatic memory fallback are not implemented. Each operation uses a bounded connection. Redis ACLs must permit authentication/database selection where configured and the GET, SET, PTTL, PEXPIRE and EVAL operations used by the adapter.
+
+## HTTP behavior
+
+Only complete 200 GET responses are stored. Authorization, Cookie, Range, Upgrade, client conditional headers, Pragma and request `no-store` bypass caching. Responses with Set-Cookie, Vary, Trailer, private, no-store or must-understand are not stored. Streaming/flush, SSE, gRPC and oversized bodies are forwarded without storage.
+
+Origin `s-maxage`, `max-age`, Expires and Age can shorten configured freshness. `no-cache` requires validation before reuse. Request `no-cache`, max-age and min-fresh are respected for cache reuse. There is no stale serving or full RFC 9111 conformance claim; extensions such as stale-while-revalidate and stale-if-error are not implemented.
+
+`X-Cache-Status` reports HIT, MISS, REVALIDATED, or BYPASS on handled paths. Some direct bypass/streaming paths have no status header. It is diagnostic, not a security assertion.

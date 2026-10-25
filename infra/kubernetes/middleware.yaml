@@ -1,0 +1,29 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: catalog-cache
+  namespace: apps
+spec:
+  plugin:
+    httpCache:
+      keyPrefix: catalog-public-v1
+      store:
+        type: memory
+        memory:
+          maxEntries: 10000
+          maxBytes: 67108864
+      rules:
+        - name: product-json
+          request:
+            path:
+              type: regex
+              value: '^/api/products(/[0-9]+)?$'
+            methods: [GET]
+          response:
+            contentTypes: [application/json, 'application/*+json']
+          cache:
+            ttl: 60s
+            retention: 10m
+            maxBodyBytes: 1048576
+            revalidation:
+              mode: on-expiry

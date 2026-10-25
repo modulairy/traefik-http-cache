@@ -1,0 +1,12 @@
+entryPoints:
+  web:
+    address: ':8000'
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+experimental:
+  localPlugins:
+    httpCache:
+      moduleName: github.com/modulairy/traefik-http-cache
+log:
+  level: INFO
