@@ -1,7 +1,9 @@
 displayName: HTTP Cache
 type: middleware
 import: github.com/modulairy/traefik-http-cache
-summary: Rule-based HTTP response caching with memory and Redis adapters and conditional revalidation.
+summary: HTTP response caching by Modulairy. Redis and memory stores, precise cache rules, and conditional revalidation for Traefik.
+iconPath: .assets/icon.png
+bannerPath: .assets/banner.png
 testData:
   keyPrefix: catalog-test
   store:

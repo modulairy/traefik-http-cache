@@ -2,6 +2,13 @@
 
 Original project code is licensed under Apache-2.0. Upstream notices are retained in `licenses/` and included in container images.
 
+## v0.1.2
+
+- Modulairy catalog icon, sharing banner and README presentation.
+- Corporate support links and OCI image metadata.
+- Updated remote installation guidance following successful catalog publication.
+- No cache policy or adapter behavior changes; Traefik remains pinned to 3.7.16.
+
 ## v0.1.0
 
 Initial implementation:

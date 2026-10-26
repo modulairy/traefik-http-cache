@@ -16,7 +16,7 @@ Enable GitHub Actions and allow the pinned actions in organization policy. Allow
 
 ## Plugin catalog
 
-**Availability check — 2026-10-25:** the repository was verified public, non-fork and tagged with `traefik-plugin`, but a fresh official Traefik v3.7.16 remote startup returned `404 Unknown plugin` for `github.com/modulairy/traefik-http-cache@v0.1.0`. Traefik disabled plugins and invalidated dependent routers. Catalog distribution is pending; await the daily scan, inspect importer issues and repeat a fresh remote startup before using remote mode. GHCR publishes an optional bundled local-mode image; that workflow does not register a catalog entry or prove remote loading.
+**Availability check — 2026-10-26:** [HTTP Cache by Modulairy](https://plugins.traefik.io/plugins/6adf0931bda0e3c02a2759e0/http-cache) is listed with current version `v0.1.1`. Its download and archive-hash validation endpoints both returned HTTP 200. A clean Traefik 3.7.16 container also downloaded v0.1.1 through remote mode, logged Plugins loaded, and returned HTTP 200 from a middleware-attached test route. The prior 2026-10-25 discovery failure is resolved. Verify startup on your intended Traefik version before deployment. GHCR provides an optional bundled local-mode image and is separate from catalog discovery.
 
 Before expecting catalog discovery, verify:
 
@@ -50,3 +50,13 @@ Release distributions must retain the project's Apache 2.0 `LICENSE` and `NOTICE
 Adds linux/arm64 alongside linux/amd64 without changing cache behavior or the pinned Traefik 3.7.16 base. Image tag: `v0.1.1-traefik-v3.7`. Each release uses an OCI index containing both runtime architectures plus SBOM/provenance attestations. Older v0.1.0 tags and digests remain unchanged. Native runners validate both architectures; published-image tests use the exact digest, not a rebuilt image.
 
 The initial v0.1.1 run published both images but its final test command used an unsupported Compose option. The dedicated `verify-v0.1.1.yml` recovery workflow verifies the same immutable published digest on both native architectures and creates the release only after success. It does not rebuild or move the source/image tags. Future releases use the corrected main workflow.
+
+## Catalog presentation
+
+The root `.traefik.yml` defines the catalog name, summary, icon and sharing banner. README content supplies the detail page; `bannerPath` does not insert a README header. Keep module identity and the `httpCache` alias stable. Use absolute documentation links where catalog rendering would otherwise resolve paths against plugins.traefik.io.
+
+Catalog artwork and metadata changes should be included in the next reviewed source version. Do not move `v0.1.1` or earlier tags. A branding-only PR does not itself publish a release or update the catalog. After release and discovery, verify the icon, banner, version and remote loading on the actual catalog page. Corporate OCI labels in the release workflow apply only to future image builds.
+
+## v0.1.2
+
+Updates catalog artwork, corporate metadata and documentation. Cache policy and adapters are unchanged; Traefik remains 3.7.16. Source version: `v0.1.2`. Container tag: `v0.1.2-traefik-v3.7`, targeting Linux AMD64 and ARM64. Publication is complete only after the tag workflow and both published-image checks succeed.

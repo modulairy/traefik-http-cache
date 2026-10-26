@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Configuration and integration guides
+    url: https://github.com/modulairy/traefik-http-cache/blob/main/docs/configuration.md
+    about: Read cache rules, Redis settings, and integration requirements.
+  - name: Modulairy
+    url: https://modulairy.com/contact.html
+    about: Contact Modulairy for business enquiries. Use repository issues for plugin bugs.
