@@ -111,6 +111,10 @@ jobs:
           tags: ghcr.io/modulairy/traefik-http-cache:${{ steps.versions.outputs.image_tag }}
           labels: |
             io.traefik.version=${{ steps.versions.outputs.traefik_version }}
+            org.opencontainers.image.vendor=Modulairy
+            org.opencontainers.image.url=https://modulairy.com/
+            org.opencontainers.image.documentation=https://github.com/modulairy/traefik-http-cache#readme
+            org.opencontainers.image.authors=Modulairy <info@modulairy.com>
           build-args: |
             VERSION=${{ github.ref_name }}
             REVISION=${{ github.sha }}
