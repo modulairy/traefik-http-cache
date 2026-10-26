@@ -2,7 +2,7 @@
 
 These manifests assume an existing `apps` namespace, `catalog` Service on port 8080, and a configured Traefik controller. Names and hosts are examples. Choose one route example, rather than installing all three for the same host.
 
-Version `v0.1.1` is listed in the [Plugin Catalog](https://plugins.traefik.io/plugins/6adf0931bda0e3c02a2759e0/http-cache). Add this fragment to the existing controller's static configuration and restart it; no custom image or plugin-copying init container is required. Verify loading before routing production traffic:
+Remote loading was verified with `v0.1.1`, which is listed in the [Plugin Catalog](https://plugins.traefik.io/plugins/6adf0931bda0e3c02a2759e0/http-cache). The examples target `v0.1.2`; confirm that release is available through the catalog before using them. Add this fragment to the existing controller's static configuration and restart it; no custom image or plugin-copying init container is required. Verify loading before routing production traffic:
 
 ```yaml
 experimental:

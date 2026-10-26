@@ -1,6 +1,6 @@
 # Configuration
 
-The plugin alias is `httpCache`, module `github.com/modulairy/traefik-http-cache`. Version `v0.1.1` is listed in the [Traefik Plugin Catalog](https://plugins.traefik.io/plugins/6adf0931bda0e3c02a2759e0/http-cache). Register it in the static configuration:
+The plugin alias is `httpCache`, module `github.com/modulairy/traefik-http-cache`. Remote loading was verified with `v0.1.1`, which is listed in the [Traefik Plugin Catalog](https://plugins.traefik.io/plugins/6adf0931bda0e3c02a2759e0/http-cache). The examples target `v0.1.2`; use them after that release is available through the catalog, and verify a fresh Traefik startup. Register it in the static configuration:
 
 ```yaml
 experimental:
