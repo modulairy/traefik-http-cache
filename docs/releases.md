@@ -56,3 +56,7 @@ The initial v0.1.1 run published both images but its final test command used an 
 The root `.traefik.yml` defines the catalog name, summary, icon and sharing banner. README content supplies the detail page; `bannerPath` does not insert a README header. Keep module identity and the `httpCache` alias stable. Use absolute documentation links where catalog rendering would otherwise resolve paths against plugins.traefik.io.
 
 Catalog artwork and metadata changes should be included in the next reviewed source version. Do not move `v0.1.1` or earlier tags. A branding-only PR does not itself publish a release or update the catalog. After release and discovery, verify the icon, banner, version and remote loading on the actual catalog page. Corporate OCI labels in the release workflow apply only to future image builds.
+
+## v0.1.2
+
+Updates catalog artwork, corporate metadata and documentation. Cache policy and adapters are unchanged; Traefik remains 3.7.16. Source version: 0.1.2. Container tag: 0.1.2-traefik-v3.7, targeting Linux AMD64 and ARM64. Publication is complete only after the tag workflow and both published-image checks succeed.

@@ -18,7 +18,7 @@ import (
 	"github.com/modulairy/traefik-http-cache/internal/store"
 )
 
-const Version = "0.1.1"
+const Version = "0.1.2"
 
 type entry struct {
 	Header     http.Header

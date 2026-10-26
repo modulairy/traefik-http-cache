@@ -27,7 +27,7 @@ experimental:
   plugins:
     httpCache:
       moduleName: github.com/modulairy/traefik-http-cache
-      version: v0.1.1
+      version: v0.1.2
 ```
 
 Define a middleware in the **dynamic configuration** and attach it to your public route:
@@ -66,7 +66,7 @@ Remote mode downloads source during startup. Confirm successful plugin loading b
 - **Local development or offline loading:** [bundled Traefik image and Compose stack](https://github.com/modulairy/traefik-http-cache/blob/main/docs/development.md).
 - **Behavior and limits:** [cache identity, invalidation and adapter design](https://github.com/modulairy/traefik-http-cache/blob/main/docs/design.md).
 
-The optional bundled image supports Linux AMD64 and ARM64: `ghcr.io/modulairy/traefik-http-cache:v0.1.1-traefik-v3.7`. Remote plugin versions use `v0.1.1`; the Traefik suffix belongs only to container image tags.
+The optional bundled image supports Linux AMD64 and ARM64: `ghcr.io/modulairy/traefik-http-cache:v0.1.2-traefik-v3.7`. Remote plugin versions use `v0.1.1`; the Traefik suffix belongs only to container image tags.
 
 ## Built by Modulairy
 

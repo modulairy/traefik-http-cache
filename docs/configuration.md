@@ -7,7 +7,7 @@ experimental:
   plugins:
     httpCache:
       moduleName: github.com/modulairy/traefik-http-cache
-      version: v0.1.1
+      version: v0.1.2
 ```
 
 This belongs to Traefik's static configuration. Restart Traefik after adding it or changing the pinned version; dynamic middleware rules use the same `httpCache` alias. Source is downloaded during startup and interpreted inside the Traefik process, so the existing compatible Traefik image does not need replacement. Remote startup needs network access to plugin distribution services and a writable `./plugins-storage` directory relative to the Traefik working directory. With a read-only container filesystem, mount a dedicated writable volume there and verify runtime UID permissions. Verify successful loading in logs before routing traffic through the middleware. [Official installation guide](https://plugins.traefik.io/install).
