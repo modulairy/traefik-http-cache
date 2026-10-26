@@ -59,4 +59,4 @@ Catalog artwork and metadata changes should be included in the next reviewed sou
 
 ## v0.1.2
 
-Updates catalog artwork, corporate metadata and documentation. Cache policy and adapters are unchanged; Traefik remains 3.7.16. Source version: 0.1.2. Container tag: 0.1.2-traefik-v3.7, targeting Linux AMD64 and ARM64. Publication is complete only after the tag workflow and both published-image checks succeed.
+Updates catalog artwork, corporate metadata and documentation. Cache policy and adapters are unchanged; Traefik remains 3.7.16. Source version: `v0.1.2`. Container tag: `v0.1.2-traefik-v3.7`, targeting Linux AMD64 and ARM64. Publication is complete only after the tag workflow and both published-image checks succeed.
