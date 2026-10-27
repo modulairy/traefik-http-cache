@@ -41,7 +41,7 @@ func (c *capture) WriteHeader(code int) {
 		return
 	}
 	c.status = code
-	c.frozen = c.header.Clone()
+	c.frozen = canonicalHeaders(c.header)
 	if c.streamed {
 		c.out.WriteHeader(code)
 	}
@@ -95,9 +95,19 @@ func copyHeaders(dst, src http.Header) {
 		dst[k] = append([]string(nil), v...)
 	}
 }
+func canonicalHeaders(h http.Header) http.Header {
+	n := make(http.Header)
+	for key := range h {
+		name := http.CanonicalHeaderKey(key)
+		if _, ok := n[name]; !ok {
+			n[name] = headerValues(h, name)
+		}
+	}
+	return n
+}
 func cleanHeaders(h http.Header) http.Header {
-	n := h.Clone()
-	for _, line := range h.Values("Connection") {
+	n := canonicalHeaders(h)
+	for _, line := range n.Values("Connection") {
 		for _, name := range splitComma(line) {
 			n.Del(name)
 		}

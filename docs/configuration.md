@@ -1,13 +1,13 @@
 # Configuration
 
-The plugin alias is `httpCache`, module `github.com/modulairy/traefik-http-cache`. Remote loading was verified with `v0.1.1`, which is listed in the [Traefik Plugin Catalog](https://plugins.traefik.io/plugins/6adf0931bda0e3c02a2759e0/http-cache). The examples target `v0.1.2`; use them after that release is available through the catalog, and verify a fresh Traefik startup. Register it in the static configuration:
+The plugin alias is `httpCache`, module `github.com/modulairy/traefik-http-cache`. Remote loading was verified with `v0.1.1`, which is listed in the [Traefik Plugin Catalog](https://plugins.traefik.io/plugins/6adf0931bda0e3c02a2759e0/http-cache). The examples target `v0.1.3`; use them after that release is available through the catalog, and verify a fresh Traefik startup. Register it in the static configuration:
 
 ```yaml
 experimental:
   plugins:
     httpCache:
       moduleName: github.com/modulairy/traefik-http-cache
-      version: v0.1.2
+      version: v0.1.3
 ```
 
 This belongs to Traefik's static configuration. Restart Traefik after adding it or changing the pinned version; dynamic middleware rules use the same `httpCache` alias. Source is downloaded during startup and interpreted inside the Traefik process, so the existing compatible Traefik image does not need replacement. Remote startup needs network access to plugin distribution services and a writable `./plugins-storage` directory relative to the Traefik working directory. With a read-only container filesystem, mount a dedicated writable volume there and verify runtime UID permissions. Verify successful loading in logs before routing traffic through the middleware. [Official installation guide](https://plugins.traefik.io/install).
@@ -29,11 +29,39 @@ For local development or offline plugin loading, use the bundled image and `expe
 | `cache.retention` | `10m`; at least TTL, at most `24h` |
 | `cache.maxBodyBytes` | `1048576`; allowed range 1-67108864 |
 | `cache.keyHeaders` | Optional request header names that distinguish representations |
+| `cache.varyHeaders` | Empty by default; opt in with `[Accept-Encoding]`. Other names are rejected. |
 | `cache.revalidation.mode` | `on-expiry` or `always`; default `on-expiry` |
 
 Conditions within a rule are ANDed; Content-Type alternatives are ORed. Matching is case-sensitive except header names and MIME comparison. MIME parameters on the response are ignored. Regex is compiled once at middleware construction; use anchors for full-path matching. The decoded URL path is matched, while the original escaped path and raw query participate in the cache identity. Query parameters are not reordered or dropped.
 
-Header values are joined with `, ` before matching. `exists` checks field presence, including an empty value. A request header condition does not automatically add that header to the cache key. Add every origin representation selector to `keyHeaders`, or do not cache that endpoint. `Vary` responses are conservatively excluded even when key headers are configured.
+Header values are joined with `, ` before matching. `exists` checks field presence, including an empty value. A request header condition does not automatically add that header to the cache key. Add every origin representation selector to `keyHeaders`, or do not cache that endpoint. `keyHeaders` alone does not authorize a `Vary` response; use the explicit opt-in below.
+
+## Public CSS/JS with gzip variants
+
+Available from plugin version `v0.1.3`. Use only for public, non-personalized assets. This rule checks both the path and response MIME type, excluding HTML:
+
+```yaml
+rules:
+  - name: public-css-js
+    request:
+      path: {type: regex, value: '^/assets/.*\.(css|js)$'}
+    response:
+      contentTypes: [text/css, text/javascript, application/javascript]
+    cache:
+      ttl: 24h
+      retention: 24h
+      varyHeaders: [Accept-Encoding]
+```
+
+The configured header always participates in the key, even if the response omits `Vary`. Missing, present-empty and different values are distinct; raw value lists, ordering and qweights are preserved. Equivalent spellings of values may therefore occupy separate entries. Header names and Vary tokens are case-insensitive. Multiple Vary lines and comma-separated tokens are supported. Only explicitly allowed `Accept-Encoding` is accepted; `Vary: *`, unknown names and malformed values are not cached. In-process requests with ambiguous differently cased aliases of a keyed header bypass caching.
+
+The plugin preserves the origin's gzip bytes, `Content-Encoding`, `Vary`, `ETag` and `Last-Modified`; it does not compress or decompress. Each variant counts separately against store capacity. The complete raw query remains in the identity: `/assets/app.css?v=1` and `?v=2`, as well as differently ordered queries, are separate resources. A changed policy cannot reuse old incompatible records.
+
+The cache stores the representation visible at its middleware position. Traefik's proxy transport or other middleware can transform an origin response before it reaches the cache; for example, automatic origin gzip handling for a request without Accept-Encoding can expose an identity body. A conflicting Content-Encoding on its later 304 triggers the safe unconditional fetch rather than attaching gzip metadata to an identity body. Test middleware ordering with the actual frontend.
+
+TTL is an upper bound: origin freshness headers and Age can shorten it. Retention is limited to 24h, so with both values set to 24h an expired record can be removed rather than retained for conditional revalidation. Shorter origin freshness can still cause revalidation while the record is retained. A fresh HIT cannot detect an origin update until validation, expiry or same-URI invalidation; use versioned asset URLs.
+
+Vary opt-in does not change the Cookie/Authorization bypass policy or rewrite browser `Cache-Control` headers. It cannot establish that content is public: the origin and path/MIME rules must enforce that boundary. Response private/no-store/Set-Cookie and all streaming safeguards still apply. Middleware that changes headers or compression must preserve consistent ordering and representation metadata.
 
 ## Stores
 
@@ -58,7 +86,7 @@ Mount the password file into the Traefik container; it is read at middleware con
 
 ## HTTP behavior
 
-Only complete 200 GET responses are stored. Authorization, Cookie, Range, Upgrade, client conditional headers, Pragma and request `no-store` bypass caching. Responses with Set-Cookie, Vary, Trailer, private, no-store or must-understand are not stored. Streaming/flush, SSE, gRPC and oversized bodies are forwarded without storage.
+Only complete 200 GET responses are stored. Authorization, Cookie, Range, Upgrade, client conditional headers, Pragma and request `no-store` bypass caching. Responses with Set-Cookie, disallowed Vary, Trailer, private, no-store or must-understand are not stored. Without `varyHeaders`, any present Vary still prevents storage. Streaming/flush, SSE, gRPC and oversized bodies are forwarded without storage.
 
 Origin `s-maxage`, `max-age`, Expires and Age can shorten configured freshness. `no-cache` requires validation before reuse. Request `no-cache`, max-age and min-fresh are respected for cache reuse. Safe requests with `only-if-cached` return 504 when no usable cached response exists, without contacting the origin. There is no stale serving or full RFC 9111 conformance claim; extensions such as stale-while-revalidate and stale-if-error are not implemented.
 

@@ -2,6 +2,12 @@
 
 Original project code is licensed under Apache-2.0. Upstream notices are retained in `licenses/` and included in container images.
 
+## v0.1.3
+
+- Opt-in per-rule `varyHeaders: [Accept-Encoding]` support, with distinct raw header keys for gzip and identity representations.
+- Preserve compressed response bytes and validators; reject unsupported/wildcard Vary and refetch when 304 metadata changes representation selection or encoding.
+- Native memory/Redis and actual Traefik/Yaegi compressed-asset regression coverage. Existing privacy, invalidation and capacity protections remain in place.
+
 ## v0.1.2
 
 - Modulairy catalog icon, sharing banner and README presentation.
