@@ -24,6 +24,21 @@ http:
               maxEntries: 1000
               maxBytes: 16777216
           rules:
+            - name: default-vary-disabled
+              request:
+                path: {type: prefix, value: /assets/default/}
+              cache:
+                ttl: 60s
+                retention: 10m
+            - name: public-assets
+              request:
+                path: {type: regex, value: '^/assets/.*\.(css|js)$'}
+              response:
+                contentTypes: [text/css, text/javascript, application/javascript]
+              cache:
+                ttl: 24h
+                retention: 24h
+                varyHeaders: [Accept-Encoding]
             - name: revalidate
               request:
                 path: {type: exact, value: /validate}
@@ -51,6 +66,21 @@ http:
               address: redis:6379
               timeout: 200ms
           rules:
+            - name: default-vary-disabled
+              request:
+                path: {type: prefix, value: /assets/default/}
+              cache:
+                ttl: 60s
+                retention: 10m
+            - name: public-assets
+              request:
+                path: {type: regex, value: '^/assets/.*\.(css|js)$'}
+              response:
+                contentTypes: [text/css, text/javascript, application/javascript]
+              cache:
+                ttl: 24h
+                retention: 24h
+                varyHeaders: [Accept-Encoding]
             - name: revalidate
               request:
                 path: {type: exact, value: /validate}

@@ -64,6 +64,7 @@ type CacheConfig struct {
 	Retention    string       `json:"retention"`
 	MaxBodyBytes int          `json:"maxBodyBytes"`
 	KeyHeaders   []string     `json:"keyHeaders"`
+	VaryHeaders  []string     `json:"varyHeaders,omitempty"`
 	Revalidation Revalidation `json:"revalidation"`
 }
 type Rule struct {
@@ -85,6 +86,8 @@ type compiledRule struct {
 	path                            compiledMatch
 	requestHeaders, responseHeaders []compiledHeader
 	ttl, retention                  time.Duration
+	varyHeaders                     []string
+	keyHeaders                      []string
 }
 
 func CreateConfig() *Config {
@@ -155,8 +158,8 @@ func validHeaderName(s string) bool {
 }
 func headersMatch(h http.Header, rules []compiledHeader) bool {
 	for _, r := range rules {
-		values, exists := h[r.name]
-		if !exists || !r.match.matches(strings.Join(values, ", ")) {
+		values := headerValues(h, r.name)
+		if !present(h, r.name) || !r.match.matches(strings.Join(values, ", ")) {
 			return false
 		}
 	}
@@ -204,6 +207,25 @@ func compileRules(rules []Rule) ([]compiledRule, error) {
 				return nil, fmt.Errorf("invalid key header")
 			}
 		}
+		var varyHeaders []string
+		for _, h := range r.Cache.VaryHeaders {
+			if !strings.EqualFold(h, "Accept-Encoding") {
+				return nil, fmt.Errorf("varyHeaders supports only Accept-Encoding")
+			}
+			if len(varyHeaders) == 0 {
+				varyHeaders = append(varyHeaders, "Accept-Encoding")
+			}
+		}
+		keyHeaders := append([]string(nil), r.Cache.KeyHeaders...)
+		for _, h := range varyHeaders {
+			found := false
+			for _, key := range keyHeaders {
+				found = found || strings.EqualFold(key, h)
+			}
+			if !found {
+				keyHeaders = append(keyHeaders, h)
+			}
+		}
 		for _, ct := range r.Response.ContentTypes {
 			if ct != "application/*+json" {
 				if _, _, err := mime.ParseMediaType(ct); err != nil || strings.Contains(ct, "*") {
@@ -231,7 +253,7 @@ func compileRules(rules []Rule) ([]compiledRule, error) {
 		if err != nil || ret < ttl || ret > 24*time.Hour {
 			return nil, fmt.Errorf("retention must be >= ttl and <= 24h")
 		}
-		result = append(result, compiledRule{config: r, path: p, requestHeaders: rh, responseHeaders: sh, ttl: ttl, retention: ret})
+		result = append(result, compiledRule{config: r, path: p, requestHeaders: rh, responseHeaders: sh, ttl: ttl, retention: ret, varyHeaders: varyHeaders, keyHeaders: keyHeaders})
 	}
 	return result, nil
 }

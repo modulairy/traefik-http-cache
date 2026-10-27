@@ -1,5 +1,9 @@
 # Releases
 
+## v0.1.3
+
+Adds opt-in Accept-Encoding variants for public assets and conservative handling of changed 304 metadata. Source tag: `v0.1.3`. Bundled image: `v0.1.3-traefik-v3.7`; the pinned Traefik base remains 3.7.16. The existing native AMD64/ARM64 validation and exact published-image checks must pass before the release job creates the GitHub Release.
+
 The initial version is `v0.1.0`. `.github/workflows/ci-release.yml` validates main pushes, pull requests and manual runs. Only version-tag push events publish packages and releases; manual workflow dispatch does not publish.
 
 The separate `.github/workflows/image-tag-alias.yml` migration is an exception: its scoped push trigger or manual retry adds the suffixed alias to the existing immutable image index digest and updates the existing release notes. It does not rebuild the image, change the source Git tag, or overwrite the legacy image. Reusing the index preserves its attestations.

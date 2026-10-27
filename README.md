@@ -14,6 +14,7 @@ Cache public HTTP responses with precise rules and a choice of Redis or in-memor
 | Precise matching | Exact paths, prefixes, contains and regex; request and response header conditions. |
 | Public responses only | Conservative handling of cookies, authorization and HTTP cache directives. |
 | Conditional revalidation | ETag and Last-Modified checks when a response expires, or on every use. |
+| Encoded public assets | Opt-in `Vary: Accept-Encoding` support keeps gzip and identity CSS/JS variants separate. |
 | Kubernetes integration | Middleware examples for Ingress, IngressRoute and Gateway API HTTPRoute. |
 
 The plugin runs inside Traefik through Yaegi. Redis is optional; memory mode needs no external cache service.
@@ -27,7 +28,7 @@ experimental:
   plugins:
     httpCache:
       moduleName: github.com/modulairy/traefik-http-cache
-      version: v0.1.2
+      version: v0.1.3
 ```
 
 Define a middleware in the **dynamic configuration** and attach it to your public route:
@@ -66,7 +67,7 @@ Remote mode downloads source during startup. Confirm successful plugin loading b
 - **Local development or offline loading:** [bundled Traefik image and Compose stack](https://github.com/modulairy/traefik-http-cache/blob/main/docs/development.md).
 - **Behavior and limits:** [cache identity, invalidation and adapter design](https://github.com/modulairy/traefik-http-cache/blob/main/docs/design.md).
 
-The optional bundled image supports Linux AMD64 and ARM64: `ghcr.io/modulairy/traefik-http-cache:v0.1.2-traefik-v3.7`. Remote plugin versions use `v0.1.2`; the Traefik suffix belongs only to container image tags.
+The optional bundled image supports Linux AMD64 and ARM64: `ghcr.io/modulairy/traefik-http-cache:v0.1.3-traefik-v3.7`. Remote plugin versions use `v0.1.3`; the Traefik suffix belongs only to container image tags.
 
 ## Built by Modulairy
 

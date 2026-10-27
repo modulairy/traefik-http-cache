@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,7 +19,7 @@ import (
 	"github.com/modulairy/traefik-http-cache/internal/store"
 )
 
-const Version = "0.1.2"
+const Version = "0.1.3"
 
 type entry struct {
 	Header     http.Header
@@ -88,7 +89,7 @@ func splitComma(s string) []string {
 }
 func directives(h http.Header) map[string]string {
 	m := make(map[string]string)
-	for _, line := range h.Values("Cache-Control") {
+	for _, line := range headerValues(h, "Cache-Control") {
 		for _, part := range splitComma(line) {
 			kv := strings.SplitN(part, "=", 2)
 			key := strings.ToLower(strings.TrimSpace(kv[0]))
@@ -105,7 +106,98 @@ func directives(h http.Header) map[string]string {
 	return m
 }
 func has(m map[string]string, key string) bool { _, ok := m[key]; return ok }
-func present(h http.Header, key string) bool   { _, ok := h[http.CanonicalHeaderKey(key)]; return ok }
+func present(h http.Header, key string) bool {
+	for name := range h {
+		if strings.EqualFold(name, key) {
+			return true
+		}
+	}
+	return false
+}
+
+// Preserve each field value and its order; never normalize encoding qweights.
+func headerValues(h http.Header, key string) []string {
+	var names []string
+	for name := range h {
+		if strings.EqualFold(name, key) {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	var values []string
+	for _, name := range names {
+		values = append(values, h[name]...)
+	}
+	return values
+}
+
+func ambiguousHeaders(h http.Header, names []string) bool {
+	for _, name := range names {
+		count := 0
+		for field := range h {
+			if strings.EqualFold(field, name) {
+				count++
+			}
+		}
+		if count > 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// An empty opt-in preserves the original rejection of every Vary field.
+func varyFields(h http.Header, rule compiledRule) ([]string, bool) {
+	if !present(h, "Vary") {
+		return nil, true
+	}
+	if len(rule.varyHeaders) == 0 {
+		return nil, false
+	}
+	seen := make(map[string]bool)
+	for _, line := range headerValues(h, "Vary") {
+		for _, field := range splitComma(line) {
+			if !validHeaderName(field) || field == "*" {
+				return nil, false
+			}
+			name := http.CanonicalHeaderKey(field)
+			allowed := false
+			for _, h := range rule.varyHeaders {
+				allowed = allowed || name == h
+			}
+			if !allowed {
+				return nil, false
+			}
+			seen[name] = true
+		}
+	}
+	if len(seen) == 0 {
+		return nil, false
+	}
+	var fields []string
+	for name := range seen {
+		fields = append(fields, name)
+	}
+	sort.Strings(fields)
+	return fields, true
+}
+
+func reusable304(old, update http.Header, rule compiledRule) bool {
+	before, ok := varyFields(old, rule)
+	if !ok {
+		return false
+	}
+	if present(update, "Vary") {
+		after, valid := varyFields(update, rule)
+		if !valid || strings.Join(before, ",") != strings.Join(after, ",") {
+			return false
+		}
+	}
+	if present(update, "Content-Encoding") && strings.Join(headerValues(old, "Content-Encoding"), "\n") != strings.Join(headerValues(update, "Content-Encoding"), "\n") {
+		return false
+	}
+	return true
+}
 func bypass(r *http.Request) bool {
 	for _, h := range []string{"Authorization", "Cookie", "Range", "If-Match", "If-None-Match", "If-Modified-Since", "If-Unmodified-Since", "If-Range", "Upgrade"} {
 		if present(r.Header, h) {
@@ -131,10 +223,14 @@ func (m *middleware) key(r *http.Request, rule compiledRule) string {
 		Policy, Rule, Method string
 		Headers              []headerKey
 	}{Policy: m.policy, Rule: rule.config.Name, Method: r.Method}
-	for _, h := range rule.config.Cache.KeyHeaders {
-		values.Headers = append(values.Headers, headerKey{Name: http.CanonicalHeaderKey(h), Present: present(r.Header, h), Values: r.Header.Values(h)})
+	for _, h := range rule.keyHeaders {
+		values.Headers = append(values.Headers, headerKey{Name: http.CanonicalHeaderKey(h), Present: present(r.Header, h), Values: headerValues(r.Header, h)})
 	}
 	b, _ := json.Marshal(values)
+	if len(rule.varyHeaders) > 0 {
+		// Isolate opt-in entries from pre-support policy/key formats.
+		return digest("vary-v1\n" + string(b))
+	}
 	return digest(string(b))
 }
 func (m *middleware) disabled() bool {
@@ -190,6 +286,10 @@ func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		forward()
 		return
 	}
+	if ambiguousHeaders(r.Header, rule.keyHeaders) {
+		forward()
+		return
+	}
 	key := m.key(r, *rule)
 	data, gen, err := m.store.Read(r.Context(), scope, key, rule.retention)
 	if err != nil {
@@ -201,7 +301,11 @@ func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(data) > 0 {
 		var e entry
 		if json.Unmarshal(data, &e) == nil && !e.Stored.IsZero() {
-			cached = &e
+			if _, allowed := varyFields(e.Header, *rule); allowed {
+				cached = &e
+			} else {
+				m.invalidate(r.Context(), scope)
+			}
 		}
 	}
 	if cached != nil && fresh(cached, r, rule) {
@@ -212,7 +316,9 @@ func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no usable cached response", http.StatusGatewayTimeout)
 		return
 	}
-	request := r.Clone(r.Context())
+	origin := r.Clone(r.Context())
+	origin.Header = canonicalHeaders(r.Header)
+	request := origin.Clone(r.Context())
 	conditional := false
 	if cached != nil {
 		if tag := cached.Header.Get("ETag"); tag != "" {
@@ -238,10 +344,15 @@ func (m *middleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	c.header = c.frozen
 	if c.status == 304 && cached != nil && conditional {
+		if !reusable304(cached.Header, c.header, *rule) {
+			m.invalidate(r.Context(), scope)
+			m.next.ServeHTTP(w, origin)
+			return
+		}
 		// A contradictory validator must never refresh the stored representation.
 		if tag := c.header.Get("ETag"); tag != "" && cached.Header.Get("ETag") != "" && strings.TrimPrefix(tag, "W/") != strings.TrimPrefix(cached.Header.Get("ETag"), "W/") {
 			m.invalidate(r.Context(), scope)
-			m.next.ServeHTTP(w, r)
+			m.next.ServeHTTP(w, origin)
 			return
 		}
 		h := cached.Header.Clone()
@@ -324,7 +435,8 @@ func fresh(e *entry, r *http.Request, rule *compiledRule) bool {
 }
 func makeEntry(h http.Header, body []byte, rule compiledRule, started time.Time) (*entry, bool) {
 	d := directives(h)
-	if has(d, "private") || has(d, "no-store") || has(d, "invalid") || has(d, "must-understand") || present(h, "Set-Cookie") || present(h, "Vary") || present(h, "Trailer") || !rule.responseMatches(h) {
+	_, varyOK := varyFields(h, rule)
+	if has(d, "private") || has(d, "no-store") || has(d, "invalid") || has(d, "must-understand") || present(h, "Set-Cookie") || !varyOK || present(h, "Trailer") || !rule.responseMatches(h) {
 		return nil, false
 	}
 	if ct := strings.ToLower(h.Get("Content-Type")); strings.HasPrefix(ct, "text/event-stream") || strings.HasPrefix(ct, "application/grpc") {
